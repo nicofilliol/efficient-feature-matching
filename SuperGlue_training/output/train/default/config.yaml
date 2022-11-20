@@ -1,0 +1,55 @@
+train_params:
+  output_dir: output/train
+  experiment_name: default
+  experiment_tag: default
+  start_epoch: 0
+  batch_size: 2
+  num_epochs: 90
+  sync_bn: false
+  restore_opt: true
+  num_workers: 0
+  log_interval: 50
+  debug: true
+  debug_path: debug
+  debug_iters: 10
+  val_images_count: 10
+  use_wandb: false
+  use_ema: false
+  init_seed: 10
+  save_dir: output/train/default
+superglue_params:
+  sinkhorn_iterations: 100
+  match_threshold: 0.2
+  num_layers: 9
+  restore_path: null
+  use_layernorm: false
+  bin_value: 1.0
+  pos_loss_weight: 0.45
+  neg_loss_weight: 1.0
+superpoint_params:
+  nms_radius: 4
+  max_keypoints: 512
+  keypoint_threshold: 0.0
+  remove_borders: 4
+optimizer_params:
+  opt_type: adam
+  lr: 0.0001
+  weight_decay: 0.0005
+  warmup_epochs: 1
+  step_epoch: 25
+  step_value: 0.9440608762859234
+dataset_params:
+  dataset_path: /Users/nfilliol/Desktop/ETH/MIT HS22/TinyML/Datasets.nosync
+  apply_color_aug: true
+  image_height: 480
+  image_width: 640
+  resize_aspect: false
+  augmentation_params:
+    patch_ratio: 0.85
+    perspective_x: 0.0008
+    perspective_y: 0.0008
+    shear_ratio: 0.04
+    shear_angle: 10
+    rotation_angle: 25
+    scale: 0.6
+    translation: 0.6
