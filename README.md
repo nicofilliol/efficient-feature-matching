@@ -1,2 +1,4 @@
 # efficient-feature-matching
 Course project for 6.S965: TinyML &amp; Efficient Deep Learning Computing at MIT 2022.
+
+<a href="https://colab.research.google.com/drive/1p7lE14vPTLQ41qBHyUpXlDQD5AxawjbX?usp=sharing" rel="nofollow noreferrer noopener" target="_blank"><img src="https://user-content.gitlab-static.net/dfbb2c197c959c47da3e225b71504edb540e21d6/68747470733a2f2f636f6c61622e72657365617263682e676f6f676c652e636f6d2f6173736574732f636f6c61622d62616467652e737667" alt="Open In Colab" data-canonical-src="https://colab.research.google.com/assets/colab-badge.svg" decoding="async" class="js-lazy-loaded" loading="lazy" data-qa_selector="js_lazy_loaded_content"></a>
