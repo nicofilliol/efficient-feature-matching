@@ -3,6 +3,7 @@ import numpy as np
 import copy
 from tqdm.auto import tqdm
 from pruning.fine_grained_pruning import FineGrainedPruner
+from pruning.channel_pruning import ChannelPruner
 from evaluate import evaluate
 from finetune import finetune
 from SuperGlue.models.matching import Matching
@@ -138,13 +139,23 @@ def main():
             else:
                 sparsity_dict[name] = 0
 
-    pruner = FineGrainedPruner(matching, sparsity_dict)
+    # pruner = FineGrainedPruner(matching, sparsity_dict)
     # helper.profile_matching_model(pruner.model, count_nonzero_only=True)
     # helper.plot_weight_distribution(sample_param_sets, out_path="weight_distribution_pruned.png", count_nonzero_only=True)
     # pruned_results = evaluate(pruner.model, max_evaluation_points=-1)
     # print(f"Pruned Results = {pruned_results}")
 
-    finetune(pruner, config_path="SuperGlue/configs/coco_config.yaml", max_epochs=1)
+    #finetune(matching, [pruner], config_path="SuperGlue/configs/coco_config.yaml", max_epochs=1)
+
+    channel_pruner = ChannelPruner(matching.superpoint, prune_ratio=0.3)
+    # param_sets = [(name, param) for (name, param) in matching.named_parameters() if param.dim() > 1 and "superpoint" in name]
+    # sample_param_sets = random.sample(param_sets, 12)
+    # helper.profile_matching_model(matching, count_nonzero_only=True)
+    # helper.plot_weight_distribution(sample_param_sets, out_path="superpoint_weight_distribution_pruned.png", count_nonzero_only=True)
+    # pruned_results = evaluate(matching, max_evaluation_points=-1)
+    # print(f"Channel Pruned Results = {pruned_results}")
+
+    finetune(matching, [channel_pruner], config_path="SuperGlue/configs/coco_config.yaml", max_epochs=1, train_superpoint=True)
 
 
 if __name__ == "__main__":

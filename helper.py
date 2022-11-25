@@ -73,12 +73,12 @@ def plot_weight_distribution(layers, out_path, bins=256, count_nonzero_only=Fals
         if param.dim() > 1:
             ax = axes[plot_index]
             if count_nonzero_only:
-                param_cpu = param.detach().view(-1).cpu()
-                param_cpu = param_cpu[param_cpu != 0].view(-1)
+                param_cpu = param.detach().reshape(-1).cpu()
+                param_cpu = param_cpu[param_cpu != 0].reshape(-1)
                 ax.hist(param_cpu, bins=bins, density=True, 
                         color = 'blue', alpha = 0.5)
             else:
-                ax.hist(param.detach().view(-1).cpu(), bins=bins, density=True, 
+                ax.hist(param.detach().reshape(-1).cpu(), bins=bins, density=True, 
                         color = 'blue', alpha = 0.5)
             ax.set_xlabel(name)
             ax.set_ylabel('density')

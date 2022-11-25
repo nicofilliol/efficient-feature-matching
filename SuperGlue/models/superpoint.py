@@ -144,6 +144,9 @@ class SuperPoint(nn.Module):
             c5, self.config['descriptor_dim'],
             kernel_size=1, stride=1, padding=0)
 
+        self.backbone = [self.conv1a, self.conv1b, self.conv2a, self.conv2b, self.conv3a, self.conv3b, self.conv4a, self.conv4b]
+        self.head = [(self.convPa, self.convPb), (self.convDa, self.convDb)]
+
         path = Path(__file__).parent / 'weights/superpoint_v1.pth'
         self.load_state_dict(torch.load(str(path)))
 
