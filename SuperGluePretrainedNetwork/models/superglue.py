@@ -243,7 +243,6 @@ class SuperGlue(nn.Module):
             }
 
         start = time.time()
-
         # Keypoint normalization.
         kpts0 = normalize_keypoints(kpts0, data['image0'].shape)
         kpts1 = normalize_keypoints(kpts1, data['image1'].shape)
@@ -283,8 +282,8 @@ class SuperGlue(nn.Module):
         indices1 = torch.where(valid1, indices1, indices1.new_tensor(-1))
 
         end = time.time()
-        print(f"Start: {start}, Mid: {mid}, End: {end}")
-        print(f"NN: {mid-start}, Matching: {end-mid}")
+        #print(f"Start: {start}, Mid: {mid}, End: {end}")
+        #print(f"NN: {mid-start}, Matching: {end-mid}")
 
         return {
             'matches0': indices0, # use -1 for invalid match

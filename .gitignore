@@ -1,5 +1,5 @@
 # Byte-compiled / optimized / DLL files
-__pycache__/
+*__pycache__/
 *.py[cod]
 *$py.class
 
@@ -130,3 +130,7 @@ dmypy.json
 
 # MacOS Files
 *.DS_STORE
+
+# Homography Pairs
+*dump_homo_pairs/*
+SuperGlue/assets/coco_test_images/*

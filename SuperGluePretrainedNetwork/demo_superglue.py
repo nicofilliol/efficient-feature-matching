@@ -149,14 +149,6 @@ if __name__ == '__main__':
     matching = Matching(config).eval().to(device)
     keys = ['keypoints', 'scores', 'descriptors']
 
-
-    # Profile Model
-    dense_model_size = helper.get_model_size(matching.superglue)
-    print(f"Dense model has size={dense_model_size/helper.MiB:.2f} MiB")
-    helper.plot_weight_distribution(matching.superglue, n_layers=5)
-
-    helper.profile_matching_model(matching)
-
     vs = VideoStreamer(opt.input, opt.resize, opt.skip,
                        opt.image_glob, opt.max_length)
     frame, ret = vs.next_frame()
