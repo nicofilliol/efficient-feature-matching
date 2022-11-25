@@ -8,19 +8,19 @@ class FineGrainedPruner:
             model (torch.Module): model to be pruned
             sparsity_dict (dict): sparsity levels for different layers
         """
-        self.masks = self.prune(model, sparsity_dict)
         self.model = model
+        self.masks = self.prune(sparsity_dict)
 
     @torch.no_grad()
-    def apply(self, model):
-        for name, param in model.named_parameters():
+    def apply_masks(self):
+        for name, param in self.model.named_parameters():
             if name in self.masks:
                 param *= self.masks[name]
     
     @torch.no_grad()
-    def prune(self, model, sparsity_dict):
+    def prune(self, sparsity_dict):
         masks = dict()
-        for name, param in model.named_parameters():
+        for name, param in self.model.named_parameters():
             if param.dim() > 1: # we only prune conv and fc weights
                 masks[name] = self.fine_grained_prune(param, sparsity_dict.get(name, 0))
         return masks

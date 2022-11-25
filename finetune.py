@@ -20,6 +20,7 @@ from SuperGlue.utils.common import increment_path, init_seeds, clean_checkpoint,
 from SuperGlue.utils.preprocess_utils import torch_find_matches
 from SuperGlue.utils.dataset import COCO_loader, COCO_valloader, collate_batch
 from torch.utils.tensorboard import SummaryWriter
+from pruning.fine_grained_pruning import FineGrainedPruner
 
 def change_lr(epoch, config, optimizer):
     if epoch >= config['optimizer_params']['step_epoch']:
@@ -32,7 +33,7 @@ def change_lr(epoch, config, optimizer):
         c_lr = g['lr']
         print("Changed learning rate to {}".format(c_lr))
 
-def train(matching: Matching, config:dict, epochs=5):
+def train(pruner: FineGrainedPruner, config:dict, epochs=5):
     # Setup
     use_wandb = False
     if config['train_params']['use_wandb']:
@@ -56,10 +57,10 @@ def train(matching: Matching, config:dict, epochs=5):
     init_seeds(rank + config['train_params']['init_seed'])
     config['superglue_params']['GNN_layers'] = ['self', 'cross'] * config['superglue_params']['num_layers']
     
-    superglue_model = matching.superglue.to(device)
-    superpoint_model = matching.superpoint.to(device)
+    superglue_model = pruner.model.superglue.to(device)
+    superpoint_model = pruner.model.superpoint.to(device)
     superpoint_model.eval()
-    
+
     for _, k in superpoint_model.named_parameters():
         k.requires_grad = False
     start_epoch = config['train_params']['start_epoch'] if config['train_params']['start_epoch'] > -1 else 0
@@ -206,6 +207,10 @@ def train(matching: Matching, config:dict, epochs=5):
                     if use_wandb:
                         wandb.save(str(weight_dir / 'lastiter.pt'))
                 t5 = time_synchronized()
+
+            # Apply mask to keep parameters sparse
+            pruner.apply_masks()
+            
         if rank in [-1, 0]:
             print("\nDoing evaluation..")
             with torch.no_grad():
@@ -236,7 +241,7 @@ def train(matching: Matching, config:dict, epochs=5):
         dist.destroy_process_group()
 
 
-def finetune(model, config_path="SuperGlue/configs/coco_config.yaml", max_epochs=5):
+def finetune(model:FineGrainedPruner, config_path="SuperGlue/configs/coco_config.yaml", max_epochs=5):
     with open(config_path, 'r') as file:
         config = yaml.full_load(file)
     config["train_params"]['save_dir'] = increment_path(Path(config['train_params']['output_dir']) / config['train_params']['experiment_name'])

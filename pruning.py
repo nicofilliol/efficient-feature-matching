@@ -144,7 +144,7 @@ def main():
     # pruned_results = evaluate(pruner.model, max_evaluation_points=-1)
     # print(f"Pruned Results = {pruned_results}")
 
-    finetune(pruner.model, max_epochs=1)
+    finetune(pruner, config_path="SuperGlue/configs/coco_config.yaml", max_epochs=1)
 
 
 if __name__ == "__main__":
