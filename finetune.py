@@ -73,7 +73,20 @@ def train(model: Matching, pruners: list, config:dict, epochs=5, train_superpoin
             start_epoch = restore_dict['epoch'] + 1
     if is_distributed and config['train_params']['sync_bn']:
         superglue_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(superglue_model).to(device)
+   
     pg0, pg1, pg2 = [], [], []
+    
+    if train_superpoint:
+        for k, v in superpoint_model.named_modules():
+            if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
+                pg2.append(v.bias)  # biases
+            if hasattr(v, 'bin_score'):
+                pg0.append(v.bin_score)
+            if isinstance(v, nn.BatchNorm2d) or isinstance(v, nn.BatchNorm1d) or isinstance(v, nn.SyncBatchNorm):
+                pg0.append(v.weight)  # no decay
+            elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
+                pg1.append(v.weight)  # apply decay
+
     for k, v in superglue_model.named_modules():
         if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
             pg2.append(v.bias)  # biases
@@ -83,6 +96,7 @@ def train(model: Matching, pruners: list, config:dict, epochs=5, train_superpoin
             pg0.append(v.weight)  # no decay
         elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
             pg1.append(v.weight)  # apply decay
+    
     if config['optimizer_params']['opt_type'].lower() == "adam":
         optimizer = optim.Adam(pg0, lr=config['optimizer_params']['lr'], betas=(0.9, 0.999))  # adjust beta1 to momentum
     else:
@@ -91,6 +105,7 @@ def train(model: Matching, pruners: list, config:dict, epochs=5, train_superpoin
     optimizer.add_param_group({'params': pg2}) 
     print('Optimizer groups: %g .bias, %g conv.weight, %g other' % (len(pg2), len(pg1), len(pg0)))
     del pg0, pg1, pg2
+    
     if config['superglue_params']['restore_path']:
         if ('optimizer' in restore_dict) and config['train_params']['restore_opt']:
             optimizer.load_state_dict(restore_dict['optimizer'])

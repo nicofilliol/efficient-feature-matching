@@ -104,8 +104,8 @@ def main():
     matching = Matching(config).eval().to(device)
 
     # # Randomly sample a subset of parameter sets for tests
-    # param_sets = [(name, param) for (name, param) in matching.named_parameters() if param.dim() > 1 and "superglue" in name]
-    # sample_param_sets = random.sample(param_sets, 12)
+    param_sets = [(name, param) for (name, param) in matching.named_parameters() if param.dim() > 1]
+    sample_param_sets = random.sample(param_sets, 12)
 
     # # Profile and evaluate dense model
     # helper.profile_matching_model(matching, count_nonzero_only=False)
@@ -125,21 +125,20 @@ def main():
 
     # Prune
     sparsity_for_layer_type = {
-        'gnn_attn' : 0.9,
-        'mlp' : 0.7,
+        'gnn_attn' : 0.7,
+        'mlp' : 0.5,
     }
 
     sparsity_dict = {}
-    for name, _ in matching.named_parameters():
-        if "superglue" in name:
-            if "attn" in name:
-                sparsity_dict[name] = sparsity_for_layer_type["gnn_attn"]
-            elif "mlp" in name:
-                sparsity_dict[name] = sparsity_for_layer_type["mlp"]
-            else:
-                sparsity_dict[name] = 0
+    for name, _ in matching.superglue.named_parameters():
+        if "attn" in name:
+            sparsity_dict[name] = sparsity_for_layer_type["gnn_attn"]
+        elif "mlp" in name:
+            sparsity_dict[name] = sparsity_for_layer_type["mlp"]
+        else:
+            sparsity_dict[name] = 0
 
-    # pruner = FineGrainedPruner(matching, sparsity_dict)
+    pruner = FineGrainedPruner(matching.superglue, sparsity_dict)
     # helper.profile_matching_model(pruner.model, count_nonzero_only=True)
     # helper.plot_weight_distribution(sample_param_sets, out_path="weight_distribution_pruned.png", count_nonzero_only=True)
     # pruned_results = evaluate(pruner.model, max_evaluation_points=-1)
@@ -147,13 +146,18 @@ def main():
 
     #finetune(matching, [pruner], config_path="SuperGlue/configs/coco_config.yaml", max_epochs=1)
 
-    channel_pruner = ChannelPruner(matching.superpoint, prune_ratio=0.3)
+    channel_pruner = ChannelPruner(matching.superpoint, prune_ratio=0.2)
     # param_sets = [(name, param) for (name, param) in matching.named_parameters() if param.dim() > 1 and "superpoint" in name]
     # sample_param_sets = random.sample(param_sets, 12)
     # helper.profile_matching_model(matching, count_nonzero_only=True)
     # helper.plot_weight_distribution(sample_param_sets, out_path="superpoint_weight_distribution_pruned.png", count_nonzero_only=True)
     # pruned_results = evaluate(matching, max_evaluation_points=-1)
     # print(f"Channel Pruned Results = {pruned_results}")
+
+    #helper.profile_matching_model(matching, count_nonzero_only=True)
+    #helper.plot_weight_distribution(sample_param_sets, out_path="weight_distribution_pruned_both.png", count_nonzero_only=True)
+    #pruned_results = evaluate(matching, max_evaluation_points=-1)
+    #print(pruned_results)
 
     finetune(matching, [channel_pruner], config_path="SuperGlue/configs/coco_config.yaml", max_epochs=1, train_superpoint=True)
 

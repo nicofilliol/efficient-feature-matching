@@ -134,3 +134,4 @@ dmypy.json
 # Homography Pairs
 *dump_homo_pairs/*
 SuperGlue/assets/coco_test_images/*
+output/*

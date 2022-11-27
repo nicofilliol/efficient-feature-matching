@@ -6,99 +6,17 @@ import matplotlib.cm as cm
 import torch
 import cv2
 import os
-from models.matching import Matching
-from utils.common import (compute_pose_error, compute_epipolar_error,
+from SuperGlue.models.matching import Matching
+from SuperGlue.utils.common import (compute_pose_error, compute_epipolar_error,
                           estimate_pose, make_matching_plot,
                           error_colormap, AverageTimer, pose_auc, read_image,read_image_with_homography,
                           rotate_intrinsics, rotate_pose_inplane, compute_pixel_error,
                           scale_intrinsics, weights_mapping, download_base_files, download_test_images)
-from utils.preprocess_utils import torch_find_matches
+from SuperGlue.utils.preprocess_utils import torch_find_matches
 
 torch.set_grad_enabled(False)
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Image pair matching and pose evaluation with SuperGlue',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument(
-        '--input_homography', type=str, default='assets/coco_test_images_homo.txt',
-        help='Path to the list of image pairs and corresponding homographies')
-    parser.add_argument(
-        '--input_dir', type=str, default='assets/coco_test_images/',
-        help='Path to the directory that contains the images')
-    parser.add_argument(
-        '--output_dir', type=str, default='dump_homo_pairs/',
-        help='Path to the directory in which the .npz results and optionally,'
-             'the visualization images are written')
-
-    parser.add_argument(
-        '--max_length', type=int, default=-1,
-        help='Maximum number of pairs to evaluate')
-    parser.add_argument(
-        '--resize', type=int, nargs='+', default=[640, 480],
-        help='Resize the input image before running inference. If two numbers, '
-             'resize to the exact dimensions, if one number, resize the max '
-             'dimension, if -1, do not resize')
-    parser.add_argument(
-        '--resize_float', action='store_true',
-        help='Resize the image after casting uint8 to float')
-
-    parser.add_argument(
-        '--superglue', default='coco_homo',
-        help='SuperGlue weights')
-    parser.add_argument(
-        '--max_keypoints', type=int, default=1024,
-        help='Maximum number of keypoints detected by Superpoint'
-             ' (\'-1\' keeps all keypoints)')
-    parser.add_argument(
-        '--keypoint_threshold', type=float, default=0.005,
-        help='SuperPoint keypoint detector confidence threshold')
-    parser.add_argument(
-        '--nms_radius', type=int, default=4,
-        help='SuperPoint Non Maximum Suppression (NMS) radius'
-        ' (Must be positive)')
-    parser.add_argument(
-        '--sinkhorn_iterations', type=int, default=20,
-        help='Number of Sinkhorn iterations performed by SuperGlue')
-    parser.add_argument('--min_matches', type=int, default=12,
-        help="Minimum matches required for considering matching")
-    parser.add_argument(
-        '--match_threshold', type=float, default=0.2,
-        help='SuperGlue match threshold')
-
-    parser.add_argument(
-        '--viz', action='store_true',
-        help='Visualize the matches and dump the plots')
-    parser.add_argument(
-        '--eval', action='store_true',
-        help='Perform the evaluation'
-             ' (requires ground truth pose and intrinsics)')
-    parser.add_argument(
-        '--fast_viz', action='store_true',
-        help='Use faster image visualization with OpenCV instead of Matplotlib')
-    parser.add_argument(
-        '--cache', action='store_true',
-        help='Skip the pair if output .npz files are already found')
-    parser.add_argument(
-        '--show_keypoints', action='store_true',
-        help='Plot the keypoints in addition to the matches')
-    parser.add_argument(
-        '--viz_extension', type=str, default='png', choices=['png', 'pdf'],
-        help='Visualization file extension. Use pdf for highest-quality.')
-    parser.add_argument(
-        '--opencv_display', action='store_true',
-        help='Visualize via OpenCV before saving output images')
-    parser.add_argument(
-        '--shuffle', action='store_true',
-        help='Shuffle ordering of pairs before processing')
-    parser.add_argument(
-        '--force_cpu', action='store_true',
-        help='Force pytorch to run in CPU mode.')
-
-    opt = parser.parse_args()
-    print(opt)
-
+def match_homography(opt, model=None):
     assert not (opt.opencv_display and not opt.viz), 'Must use --viz with --opencv_display'
     assert not (opt.opencv_display and not opt.fast_viz), 'Cannot use --opencv_display without --fast_viz'
     assert not (opt.fast_viz and not opt.viz), 'Must use --viz with --fast_viz'
@@ -148,7 +66,11 @@ if __name__ == '__main__':
             'match_threshold': opt.match_threshold,
         }
     }
-    matching = Matching(config).eval().to(device)
+    if model is None:
+        matching = Matching(config).eval().to(device)
+    else:
+        matching = model
+
     input_dir = Path(opt.input_dir)
     print('Looking for data in directory \"{}\"'.format(input_dir))
     output_dir = Path(opt.output_dir)
@@ -248,8 +170,16 @@ if __name__ == '__main__':
             timer.update('eval')
 
         if do_viz:
-            # Visualize the matches.
-            color = cm.jet(mconf)
+            # Visualize the matches (only works without fast_viz atm).
+            if not opt.fast_viz:
+                m_flags = (matches == gt_match_vec)[valid]
+                color_map = {
+                    0: 'red',
+                    1: 'lime'
+                }
+                color = [color_map[match] for match in m_flags]
+            else:
+                color = cm.jet(mconf)
             text = [
                 'SuperGlue',
                 'Keypoints: {}:{}'.format(len(kpts0), len(kpts1)),
@@ -309,3 +239,90 @@ if __name__ == '__main__':
         print('AUC@5\t AUC@10\t AUC@25\t Prec\t Recall\t')
         print('{:.2f}\t {:.2f}\t {:.2f}\t {:.2f}\t {:.2f}\t'.format(
             aucs_ransac[0], aucs_ransac[1], aucs_ransac[2], prec, rec))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Image pair matching and pose evaluation with SuperGlue',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument(
+        '--input_homography', type=str, default='assets/coco_test_images_homo.txt',
+        help='Path to the list of image pairs and corresponding homographies')
+    parser.add_argument(
+        '--input_dir', type=str, default='assets/coco_test_images/',
+        help='Path to the directory that contains the images')
+    parser.add_argument(
+        '--output_dir', type=str, default='dump_homo_pairs/',
+        help='Path to the directory in which the .npz results and optionally,'
+             'the visualization images are written')
+
+    parser.add_argument(
+        '--max_length', type=int, default=-1,
+        help='Maximum number of pairs to evaluate')
+    parser.add_argument(
+        '--resize', type=int, nargs='+', default=[640, 480],
+        help='Resize the input image before running inference. If two numbers, '
+             'resize to the exact dimensions, if one number, resize the max '
+             'dimension, if -1, do not resize')
+    parser.add_argument(
+        '--resize_float', action='store_true',
+        help='Resize the image after casting uint8 to float')
+
+    parser.add_argument(
+        '--superglue', default='coco_homo',
+        help='SuperGlue weights')
+    parser.add_argument(
+        '--max_keypoints', type=int, default=1024,
+        help='Maximum number of keypoints detected by Superpoint'
+             ' (\'-1\' keeps all keypoints)')
+    parser.add_argument(
+        '--keypoint_threshold', type=float, default=0.005,
+        help='SuperPoint keypoint detector confidence threshold')
+    parser.add_argument(
+        '--nms_radius', type=int, default=4,
+        help='SuperPoint Non Maximum Suppression (NMS) radius'
+        ' (Must be positive)')
+    parser.add_argument(
+        '--sinkhorn_iterations', type=int, default=20,
+        help='Number of Sinkhorn iterations performed by SuperGlue')
+    parser.add_argument('--min_matches', type=int, default=12,
+        help="Minimum matches required for considering matching")
+    parser.add_argument(
+        '--match_threshold', type=float, default=0.2,
+        help='SuperGlue match threshold')
+
+    parser.add_argument(
+        '--viz', action='store_true',
+        help='Visualize the matches and dump the plots')
+    parser.add_argument(
+        '--eval', action='store_true',
+        help='Perform the evaluation'
+             ' (requires ground truth pose and intrinsics)')
+    parser.add_argument(
+        '--fast_viz', action='store_true',
+        help='Use faster image visualization with OpenCV instead of Matplotlib')
+    parser.add_argument(
+        '--cache', action='store_true',
+        help='Skip the pair if output .npz files are already found')
+    parser.add_argument(
+        '--show_keypoints', action='store_true',
+        help='Plot the keypoints in addition to the matches')
+    parser.add_argument(
+        '--viz_extension', type=str, default='png', choices=['png', 'pdf'],
+        help='Visualization file extension. Use pdf for highest-quality.')
+    parser.add_argument(
+        '--opencv_display', action='store_true',
+        help='Visualize via OpenCV before saving output images')
+    parser.add_argument(
+        '--shuffle', action='store_true',
+        help='Shuffle ordering of pairs before processing')
+    parser.add_argument(
+        '--force_cpu', action='store_true',
+        help='Force pytorch to run in CPU mode.')
+
+    opt = parser.parse_args()
+    print(opt)
+    match_homography(opt)
+
+    

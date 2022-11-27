@@ -40,10 +40,10 @@ def get_num_parameters(model: nn.Module, count_nonzero_only=False) -> int:
     num_counted_elements = 0
     for param in model.parameters():
         if count_nonzero_only:
-            num_counted_elements += param.count_nonzero()
+            num_counted_elements += param.count_nonzero().item()
         else:
             num_counted_elements += param.numel()
-    return num_counted_elements.item()
+    return num_counted_elements
 
 
 def get_model_size(model: nn.Module, data_width=32, count_nonzero_only=False) -> int:

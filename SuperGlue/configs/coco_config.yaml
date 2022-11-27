@@ -42,7 +42,7 @@ optimizer_params:
   step_value: 0.9440608762859234 #Determines the decay rate of learning rate after step_epoch. Curr value is for 40 epochs after which init lr will be divided by 10
 
 dataset_params:
-  dataset_path:  #Path to COCO dataset that contains the 'train2017', 'val2017' and 'annotations' folder
+  dataset_path:  "/Users/nfilliol/Desktop/ETH/MIT_HS22/TinyML/Datasets.nosync" #Path to COCO dataset that contains the 'train2017', 'val2017' and 'annotations' folder
   apply_color_aug: true #whether to apply photometric distortions
   image_height: 480 
   image_width: 640
