@@ -146,6 +146,8 @@ def train(model: Matching, pruners: list, config:dict, epochs=5, train_superpoin
     for epoch in range(start_epoch, num_epochs):
         print("Started epoch: {} in rank {}".format(epoch + 1, rank))
         superglue_model.train()
+        if train_superpoint:
+            superpoint_model.train()
         if rank != -1:
             train_dataloader.sampler.set_epoch(epoch)
         pbar = enumerate(train_dataloader)
@@ -165,26 +167,26 @@ def train(model: Matching, pruners: list, config:dict, epochs=5, train_superpoin
             orig_warped = orig_warped.to(device, non_blocking=True)
             homographies = homographies.to(device, non_blocking=True)
             midpoint = len(orig_warped) // 2
-            with torch.no_grad():
-                all_match_index_0, all_match_index_1, all_match_index_2 = torch.empty(0,dtype=torch.int64,device=homographies.device), torch.empty(0,dtype=torch.int64,device=homographies.device), torch.empty(0,dtype=torch.int64,device=homographies.device)
-                t2 = time_synchronized()
-                superpoint_results = superpoint_model.forward_train({'homography': homographies, 'image': orig_warped})
-                keypoints = torch.stack(superpoint_results['keypoints'], 0)
-                descriptors = torch.stack(superpoint_results['descriptors'], 0)
-                scores = torch.stack(superpoint_results['scores'], 0)
-                keypoints0, keypoints1 = keypoints[:midpoint, :, :], keypoints[midpoint:, :, :]
-                descriptors0, descriptors1 = descriptors[:midpoint, :, :], descriptors[midpoint:, :, :]
-                scores0, scores1 = scores[:midpoint, :], scores[midpoint:, :]
-                images0, images1 = orig_warped[:midpoint, :, :, :], orig_warped[midpoint:, :, :, :]
-                for k in range(midpoint):
-                    ma_0, ma_1, miss_0, miss_1 = torch_find_matches(keypoints0[k], keypoints1[k], homographies[k], dist_thresh=3, n_iters=1)
-                    all_match_index_0 = torch.cat([all_match_index_0, torch.empty(len(ma_0) + len(miss_0) + len(miss_1), dtype=torch.long, device=ma_0.device).fill_(k)])
-                    all_match_index_1 = torch.cat([all_match_index_1, ma_0, miss_0, torch.empty(len(miss_1), dtype=torch.long, device=miss_1.device).fill_(-1)])
-                    all_match_index_2 = torch.cat([all_match_index_2, ma_1, torch.empty(len(miss_0), dtype=torch.long, device=miss_0.device).fill_(-1), miss_1])
-                if config['train_params']['debug'] and (i < config['train_params']['debug_iters']):
-                    debug_image_plot(config['train_params']['debug_path'], keypoints0[k], keypoints1[k], ma_0, ma_1, images0[-1], images1[-1], epoch, i)
-                match_indexes = torch.stack([all_match_index_0, all_match_index_1, all_match_index_2], -1)
-                gt_vector = torch.ones(len(match_indexes), dtype=torch.float32, device=match_indexes.device)
+            
+            all_match_index_0, all_match_index_1, all_match_index_2 = torch.empty(0,dtype=torch.int64,device=homographies.device), torch.empty(0,dtype=torch.int64,device=homographies.device), torch.empty(0,dtype=torch.int64,device=homographies.device)
+            t2 = time_synchronized()
+            superpoint_results = superpoint_model.forward_train({'homography': homographies, 'image': orig_warped})
+            keypoints = torch.stack(superpoint_results['keypoints'], 0)
+            descriptors = torch.stack(superpoint_results['descriptors'], 0)
+            scores = torch.stack(superpoint_results['scores'], 0)
+            keypoints0, keypoints1 = keypoints[:midpoint, :, :], keypoints[midpoint:, :, :]
+            descriptors0, descriptors1 = descriptors[:midpoint, :, :], descriptors[midpoint:, :, :]
+            scores0, scores1 = scores[:midpoint, :], scores[midpoint:, :]
+            images0, images1 = orig_warped[:midpoint, :, :, :], orig_warped[midpoint:, :, :, :]
+            for k in range(midpoint):
+                ma_0, ma_1, miss_0, miss_1 = torch_find_matches(keypoints0[k], keypoints1[k], homographies[k], dist_thresh=3, n_iters=1)
+                all_match_index_0 = torch.cat([all_match_index_0, torch.empty(len(ma_0) + len(miss_0) + len(miss_1), dtype=torch.long, device=ma_0.device).fill_(k)])
+                all_match_index_1 = torch.cat([all_match_index_1, ma_0, miss_0, torch.empty(len(miss_1), dtype=torch.long, device=miss_1.device).fill_(-1)])
+                all_match_index_2 = torch.cat([all_match_index_2, ma_1, torch.empty(len(miss_0), dtype=torch.long, device=miss_0.device).fill_(-1), miss_1])
+            if config['train_params']['debug'] and (i < config['train_params']['debug_iters']):
+                debug_image_plot(config['train_params']['debug_path'], keypoints0[k], keypoints1[k], ma_0, ma_1, images0[-1], images1[-1], epoch, i)
+            match_indexes = torch.stack([all_match_index_0, all_match_index_1, all_match_index_2], -1)
+            gt_vector = torch.ones(len(match_indexes), dtype=torch.float32, device=match_indexes.device)
             t3 = time_synchronized()
             superglue_input = {
                 'keypoints0': keypoints0, 'keypoints1': keypoints1,

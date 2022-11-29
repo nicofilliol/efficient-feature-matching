@@ -18,7 +18,7 @@ download_base_files()
 download_test_images()
 
 @torch.no_grad()
-def evaluate(model: Matching, max_evaluation_points=-1):
+def evaluate(model: Matching, max_evaluation_points=-1, preprocess=None):
 
     config = {
         "input_homography" : "SuperGlue/assets/coco_test_images_homo.txt",
@@ -75,6 +75,10 @@ def evaluate(model: Matching, max_evaluation_points=-1):
             continue
         image0, image1, inp0, inp1, scales0, homo_matrix = read_image_with_homography(input_dir / image_name, homo_matrix, device,
                                                 config["resize"], 0, config["resize_float"])
+
+        if preprocess:
+            inp0 = preprocess(inp0)
+            inp1 = preprocess(inp1)
 
         if image0 is None or image1 is None:
             print('Problem reading image pair: {}'.format(

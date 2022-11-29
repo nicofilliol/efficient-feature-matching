@@ -76,7 +76,7 @@ def plot_sensitivity_scan(names, sparsities, results, dense_model_result, metric
     fig.suptitle(f'Sensitivity Curves: Validation {metric} vs. Pruning Sparsity')
     fig.tight_layout()
     fig.subplots_adjust(top=0.925)
-    plt.savefig(f"{metric}_sensitivity.png")
+    plt.savefig(f"images/{metric}_sensitivity.png")
 
 def main():
     # Evaluate dense model
@@ -104,7 +104,7 @@ def main():
     matching = Matching(config).eval().to(device)
 
     # # Randomly sample a subset of parameter sets for tests
-    param_sets = [(name, param) for (name, param) in matching.named_parameters() if param.dim() > 1]
+    param_sets = [(name, param) for (name, param) in matching.named_parameters() if param.dim() > 1 if "superglue" in name]
     sample_param_sets = random.sample(param_sets, 12)
 
     # # Profile and evaluate dense model

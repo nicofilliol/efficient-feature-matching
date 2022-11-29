@@ -29,10 +29,10 @@ def main(opt):
     matching = Matching(config).eval().to(device)
 
     # Apply Channel Pruner 
-    pruner = ChannelPruner(matching.superpoint, prune_ratio=0.2)
+    pruner = ChannelPruner(matching.superpoint, prune_ratio=0.1)
 
-    matching.superpoint.load_state_dict(torch.load("/Users/nfilliol/Desktop/ETH/MIT_HS22/TinyML/Project/Experiments/Channel_Finegrained/superpoint_finetuned-2.pt"))
-    matching.superglue.load_state_dict(torch.load("/Users/nfilliol/Desktop/ETH/MIT_HS22/TinyML/Project/Experiments/Channel_Finegrained/superglue_finetuned-2.pt"))
+    matching.superpoint.load_state_dict(torch.load("/Users/nfilliol/Desktop/ETH/MIT_HS22/TinyML/Project/Experiments/Channel_Finegrained_Iterative/Finegrained1Epoch_Channel/superpoint_finetuned.pt"))
+    matching.superglue.load_state_dict(torch.load("/Users/nfilliol/Desktop/ETH/MIT_HS22/TinyML/Project/Experiments/Channel_Finegrained_Iterative/Finegrained1Epoch_Channel/superglue_finetuned.pt"))
 
     match_homography(opt, model=matching)
     
