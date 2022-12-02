@@ -13,7 +13,7 @@ from tqdm import tqdm
 import shutil
 
 from .base_dataset import BaseDataset
-from datasets import synthetic_dataset
+from pytorch_superpoint.datasets import synthetic_dataset
 from .utils import pipeline
 from .utils.pipeline import parse_primitives
 # from superpoint.settings import DATA_PATH

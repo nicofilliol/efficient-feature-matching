@@ -19,18 +19,18 @@ import tarfile
 import random
 import logging
 
-from utils.tools import dict_update
+from pytorch_superpoint.utils.tools import dict_update
 
-from datasets import synthetic_dataset
+from pytorch_superpoint.datasets import synthetic_dataset
 
 # from models.homographies import sample_homography
 
 from tqdm import tqdm
 import cv2
 import shutil
-from settings import DEBUG as debug
-from settings import DATA_PATH
-from settings import SYN_TMPDIR
+from pytorch_superpoint.settings import DEBUG as debug
+from pytorch_superpoint.settings import DATA_PATH
+from pytorch_superpoint.settings import SYN_TMPDIR
 
 # DATA_PATH = '.'
 import multiprocessing

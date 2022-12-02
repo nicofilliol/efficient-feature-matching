@@ -25,7 +25,7 @@ def scatter_points(warped_pnts, H, W, res_ext = 1):
 
 # from datasets.data_tools import get_labels_bi
 def get_labels_bi(warped_pnts, H, W):
-    from utils.utils import filter_points
+    from pytorch_superpoint.utils.utils import filter_points
     pnts_ext, res_ext = extrapolate_points(warped_pnts)
     # quan = lambda x: x.long()
     pnts_ext, mask = filter_points(pnts_ext, torch.tensor([W, H]), return_mask=True)
@@ -35,9 +35,9 @@ def get_labels_bi(warped_pnts, H, W):
 
 # from data_tools import warpLabels
 def warpLabels(pnts, H, W, homography, bilinear = False):
-    from utils.utils import homography_scaling_torch as homography_scaling
-    from utils.utils import filter_points
-    from utils.utils import warp_points
+    from pytorch_superpoint.utils.utils import homography_scaling_torch as homography_scaling
+    from pytorch_superpoint.utils.utils import filter_points
+    from pytorch_superpoint.utils.utils import warp_points
     if isinstance(pnts, torch.Tensor):
         pnts = pnts.long() 
     else:

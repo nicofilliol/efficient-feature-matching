@@ -14,16 +14,16 @@ import torch.utils.data as data
 import random
 
 # from .base_dataset import BaseDataset
-from settings import DATA_PATH, EXPER_PATH
-from utils.tools import dict_update
+from pytorch_superpoint.settings import DATA_PATH, EXPER_PATH
+from pytorch_superpoint.utils.tools import dict_update
 import cv2
 import logging
 from numpy.linalg import inv
 
-from utils.utils import homography_scaling_torch as homography_scaling
-from utils.utils import filter_points
+from pytorch_superpoint.utils.utils import homography_scaling_torch as homography_scaling
+from pytorch_superpoint.utils.utils import filter_points
 
-from datasets.Coco import Coco
+from pytorch_superpoint.datasets.Coco import Coco
 
 
 
