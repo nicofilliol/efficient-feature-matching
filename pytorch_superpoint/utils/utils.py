@@ -15,7 +15,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 ###### check
 # from utils.nms_pytorch import box_nms as box_nms_retinaNet
-from utils.d2s import DepthToSpace, SpaceToDepth
+from pytorch_superpoint.utils.d2s import DepthToSpace, SpaceToDepth
 
 def img_overlap(img_r, img_g, img_gray):  # img_b repeat
     def to_3d(img):
