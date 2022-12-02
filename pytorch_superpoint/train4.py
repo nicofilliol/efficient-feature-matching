@@ -17,12 +17,12 @@ import torch.utils.data
 from tensorboardX import SummaryWriter
 
 # from utils.utils import tensor2array, save_checkpoint, load_checkpoint, save_path_formatter
-from utils.utils import getWriterPath
-from settings import EXPER_PATH
+from pytorch_superpoint.utils.utils import getWriterPath
+from pytorch_superpoint.settings import EXPER_PATH
 
 ## loaders: data, model, pretrained model
-from utils.loader import dataLoader, modelLoader, pretrainedLoader
-from utils.logging import *
+from pytorch_superpoint.utils.loader import dataLoader, modelLoader, pretrainedLoader
+from pytorch_superpoint.utils.logging import *
 # from models.model_wrap import SuperPointFrontend_torch, PointTracker
 
 ###### util functions ######

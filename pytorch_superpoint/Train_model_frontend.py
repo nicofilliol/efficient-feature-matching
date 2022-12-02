@@ -14,16 +14,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data
 from tqdm import tqdm
-from utils.loader import dataLoader, modelLoader, pretrainedLoader
+from pytorch_superpoint.utils.loader import dataLoader, modelLoader, pretrainedLoader
 import logging
 
-from utils.tools import dict_update
+from pytorch_superpoint.utils.tools import dict_update
 
-from utils.utils import labels2Dto3D, flattenDetection, labels2Dto3D_flattened
+from pytorch_superpoint.utils.utils import labels2Dto3D, flattenDetection, labels2Dto3D_flattened
 
-from utils.utils import pltImshow, saveImg
-from utils.utils import precisionRecall_torch
-from utils.utils import save_checkpoint
+from pytorch_superpoint.utils.utils import pltImshow, saveImg
+from pytorch_superpoint.utils.utils import precisionRecall_torch
+from pytorch_superpoint.utils.utils import save_checkpoint
 
 from pathlib import Path
 
