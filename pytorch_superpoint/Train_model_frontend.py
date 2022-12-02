@@ -101,7 +101,7 @@ class Train_model_frontend(object):
         if self.config["model"]["dense_loss"]["enable"]:
             ## original superpoint paper uses dense loss
             print("use dense_loss!")
-            from utils.utils import descriptor_loss
+            from pytorch_superpoint.utils.utils import descriptor_loss
 
             self.desc_params = self.config["model"]["dense_loss"]["params"]
             self.descriptor_loss = descriptor_loss
@@ -110,7 +110,7 @@ class Train_model_frontend(object):
             ## our sparse loss has similar performace, more efficient
             print("use sparse_loss!")
             self.desc_params = self.config["model"]["sparse_loss"]["params"]
-            from utils.loss_functions.sparse_loss import batch_descriptor_loss_sparse
+            from pytorch_superpoint.utils.loss_functions.sparse_loss import batch_descriptor_loss_sparse
 
             self.descriptor_loss = batch_descriptor_loss_sparse
             self.desc_loss_type = "sparse"
@@ -495,7 +495,7 @@ class Train_model_frontend(object):
 
             # extract the patches from labels
             label_idx = labels_2D[...].nonzero()
-            from utils.losses import extract_patches
+            from pytorch_superpoint.utils.losses import extract_patches
 
             patch_size = 32
             patches = extract_patches(
@@ -762,8 +762,8 @@ class Train_model_frontend(object):
         :param batch_size:
         :return:
         """
-        from utils.utils import getPtsFromHeatmap
-        from utils.utils import box_nms
+        from pytorch_superpoint.utils.utils import getPtsFromHeatmap
+        from pytorch_superpoint.utils.utils import box_nms
 
         boxNms = False
         n_iter = self.n_iter
@@ -911,7 +911,7 @@ if __name__ == "__main__":
     with open(filename, "r") as f:
         config = yaml.load(f)
 
-    from utils.loader import dataLoader as dataLoader
+    from pytorch_superpoint.utils.loader import dataLoader as dataLoader
 
     # data = dataLoader(config, dataset='hpatches')
     task = config["data"]["dataset"]

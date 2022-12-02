@@ -31,7 +31,7 @@ def datasize(train_loader, config, tag='train'):
     (tag, len(train_loader)*config['model']['batch_size'], len(train_loader)))
     pass
 
-from utils.loader import get_save_path
+from pytorch_superpoint.utils.loader import get_save_path
 
 ###### util functions end ######
 
@@ -72,7 +72,7 @@ def train_joint(config, output_dir, args, model=None):
     datasize(val_loader, config, tag='val')
     # init the training agent using config file
     # from train_model_frontend import Train_model_frontend
-    from utils.loader import get_module
+    from pytorch_superpoint.utils.loader import get_module
     train_model_frontend = get_module('', config['front_end_model'])
 
     train_agent = train_model_frontend(config, save_path=save_path, device=device)
