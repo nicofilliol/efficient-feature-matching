@@ -5,11 +5,11 @@ from pathlib import Path
 import torch.utils.data as data
 
 # from .base_dataset import BaseDataset
-from settings import DATA_PATH, EXPER_PATH
-from utils.tools import dict_update
+from pytorch_superpoint.settings import DATA_PATH, EXPER_PATH
+from pytorch_superpoint.utils.tools import dict_update
 import cv2
-from utils.utils import homography_scaling_torch as homography_scaling
-from utils.utils import filter_points
+from pytorch_superpoint.utils.utils import homography_scaling_torch as homography_scaling
+from pytorch_superpoint.utils.utils import filter_points
 
 class Coco(data.Dataset):
     default_config = {
