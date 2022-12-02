@@ -1,0 +1,20 @@
+# torch >= 0.4.1
+# torchvision
+scipy
+opencv-python
+opencv-contrib-python
+matplotlib
+imageio
+tqdm
+tensorflow
+tensorboardX
+tqdm
+pyyaml
+imageio
+imgaug
+jupyter
+scikit-learn
+
+torchgeometry
+torchsummary
+coloredlogs
