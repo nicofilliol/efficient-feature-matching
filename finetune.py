@@ -275,9 +275,9 @@ def finetune(model: Matching, pruners: list, config_path="SuperGlue/configs/coco
     train(model, pruners, config=config, epochs=max_epochs, train_superpoint=train_superpoint)
 
 
-def finetune_superpoint(model: SuperPoint, pruners: list):
+def finetune_superpoint(model: SuperPoint, pruners: list, config='pytorch_superpoint/configs/superpoint_coco_train_heatmap.yaml'):
     torch.set_default_tensor_type(torch.FloatTensor)
-    args = argparse.Namespace(command='train_joint', config='configs/superpoint_coco_train_heatmap.yaml', debug=True, eval=True, exper_name='superpoint_coco', func=train_joint)
+    args = argparse.Namespace(command='train_joint', config=config, debug=True, eval=True, exper_name='superpoint_coco', func=train_joint)
 
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
