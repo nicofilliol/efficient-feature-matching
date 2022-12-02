@@ -97,11 +97,11 @@ class Coco(data.Dataset):
 
     def init_var(self):
         torch.set_default_tensor_type(torch.FloatTensor)
-        from utils.homographies import sample_homography_np as sample_homography
-        from utils.utils import inv_warp_image
-        from utils.utils import compute_valid_mask
-        from utils.photometric import ImgAugTransform, customizedTransform
-        from utils.utils import inv_warp_image, inv_warp_image_batch, warp_points
+        from pytorch_superpoint.utils.homographies import sample_homography_np as sample_homography
+        from pytorch_superpoint.utils.utils import inv_warp_image
+        from pytorch_superpoint.utils.utils import compute_valid_mask
+        from pytorch_superpoint.utils.photometric import ImgAugTransform, customizedTransform
+        from pytorch_superpoint.utils.utils import inv_warp_image, inv_warp_image_batch, warp_points
         
         self.sample_homography = sample_homography
         self.inv_warp_image = inv_warp_image
@@ -362,7 +362,7 @@ class Coco(data.Dataset):
                 if self.gaussian_label:
                     # print("do gaussian labels!")
                     # warped_labels_gaussian = get_labels_gaussian(warped_set['warped_pnts'].numpy())
-                    from utils.var_dim import squeezeToNumpy
+                    from pytorch_superpoint.utils.var_dim import squeezeToNumpy
                     # warped_labels_bi = self.inv_warp_image(labels_2D.squeeze(), inv_homography, mode='nearest').unsqueeze(0) # bilinear, nearest
                     warped_labels_bi = warped_set['labels_bi']
                     warped_labels_gaussian = self.gaussian_blur(squeezeToNumpy(warped_labels_bi))
