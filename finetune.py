@@ -21,6 +21,9 @@ from SuperGlue.utils.preprocess_utils import torch_find_matches
 from SuperGlue.utils.dataset import COCO_loader, COCO_valloader, collate_batch
 from torch.utils.tensorboard import SummaryWriter
 from pruning.fine_grained_pruning import FineGrainedPruner
+from pytorch_superpoint.train4 import train_joint
+from pytorch_superpoint.settings import EXPER_PATH
+import argparse
 
 def change_lr(epoch, config, optimizer):
     if epoch >= config['optimizer_params']['step_epoch']:
@@ -270,3 +273,15 @@ def finetune(model: Matching, pruners: list, config_path="SuperGlue/configs/coco
     
     download_base_files()
     train(model, pruners, config=config, epochs=max_epochs, train_superpoint=train_superpoint)
+
+
+def finetune_superpoint(model: SuperPoint, pruners: list):
+    torch.set_default_tensor_type(torch.FloatTensor)
+    args = argparse.Namespace(command='train_joint', config='configs/superpoint_coco_train_heatmap.yaml', debug=True, eval=True, exper_name='superpoint_coco', func=train_joint)
+
+    with open(args.config, 'r') as f:
+        config = yaml.safe_load(f)
+
+    output_dir = os.path.join(EXPER_PATH, args.exper_name)
+    os.makedirs(output_dir, exist_ok=True)
+    train_joint(config, output_dir, args, model=model)
