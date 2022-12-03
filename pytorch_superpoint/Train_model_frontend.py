@@ -178,32 +178,36 @@ class Train_model_frontend(object):
         optimizer = optim.Adam(net.parameters(), lr=lr, betas=(0.9, 0.999))
         return optimizer
 
-    def loadModel(self):
+    def loadModel(self, network=None):
         """
         load model from name and params
         init or load optimizer
         :return:
         """
-        model = self.config["model"]["name"]
-        params = self.config["model"]["params"]
-        print("model: ", model)
-        net = modelLoader(model=model, **params).to(self.device)
-        logging.info("=> setting adam solver")
+        if network is None:
+            model = self.config["model"]["name"]
+            params = self.config["model"]["params"]
+            print("model: ", model)
+            net = modelLoader(model=model, **params).to(self.device)
+            logging.info("=> setting adam solver")
+        else:
+            net = network
         optimizer = self.adamOptim(net, lr=self.config["model"]["learning_rate"])
 
         n_iter = 0
         ## new model or load pretrained
-        if self.config["retrain"] == True:
-            logging.info("New model")
-            pass
-        else:
-            path = self.config["pretrained"]
-            mode = "" if path[-4:] == ".pth" else "full" # the suffix is '.pth' or 'tar.gz'
-            logging.info("load pretrained model from: %s", path)
-            net, optimizer, n_iter = pretrainedLoader(
-                net, optimizer, n_iter, path, mode=mode, full_path=True
-            )
-            logging.info("successfully load pretrained model from: %s", path)
+        if network is None:
+            if self.config["retrain"] == True:
+                logging.info("New model")
+                pass
+            else:
+                path = self.config["pretrained"]
+                mode = "" if path[-4:] == ".pth" else "full" # the suffix is '.pth' or 'tar.gz'
+                logging.info("load pretrained model from: %s", path)
+                net, optimizer, n_iter = pretrainedLoader(
+                    net, optimizer, n_iter, path, mode=mode, full_path=True
+                )
+                logging.info("successfully load pretrained model from: %s", path)
 
         def setIter(n_iter):
             if self.config["reset_iter"]:

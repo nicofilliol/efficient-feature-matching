@@ -44,7 +44,7 @@ def train_base(config, output_dir, args):
 # def train_joint_dsac():
 #     pass
 
-def train_joint(config, output_dir, args):
+def train_joint(config, output_dir, args, model=None):
     assert 'train_iter' in config
 
     # config
@@ -85,7 +85,7 @@ def train_joint(config, output_dir, args):
     train_agent.val_loader = val_loader
 
     # load model initiates the model and load the pretrained model (if any)
-    train_agent.loadModel()
+    train_agent.loadModel(network=model)
     train_agent.dataParallel()
 
     try:
