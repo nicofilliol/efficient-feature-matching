@@ -12,10 +12,10 @@ import torch.utils.data as data
 
 # from .base_dataset import BaseDataset
 # from .utils import pipeline
-from pytorch_superpoint.utils.tools import dict_update
+from utils.tools import dict_update
 
-from pytorch_superpoint.models.homographies import sample_homography
-from pytorch_superpoint.settings import DATA_PATH
+from models.homographies import sample_homography
+from settings import DATA_PATH
 
 from imageio import imread
 def load_as_float(path):

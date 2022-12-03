@@ -16,15 +16,15 @@ import torch.utils.data
 # from utils.loader import dataLoader, modelLoader, pretrainedLoader
 import logging
 
-from pytorch_superpoint.utils.tools import dict_update
+from utils.tools import dict_update
 
 # from utils.utils import labels2Dto3D, flattenDetection, labels2Dto3D_flattened
 # from utils.utils import pltImshow, saveImg
-from pytorch_superpoint.utils.utils import precisionRecall_torch
+from utils.utils import precisionRecall_torch
 # from utils.utils import save_checkpoint
 
 from pathlib import Path
-from pytorch_superpoint.Train_model_frontend import Train_model_frontend
+from Train_model_frontend import Train_model_frontend
 
 
 def thd_img(img, thd=0.015):
@@ -90,14 +90,14 @@ class Train_model_heatmap(Train_model_frontend):
 
         if self.config["model"]["dense_loss"]["enable"]:
             print("use dense_loss!")
-            from pytorch_superpoint.utils.utils import descriptor_loss
+            from utils.utils import descriptor_loss
             self.desc_params = self.config["model"]["dense_loss"]["params"]
             self.descriptor_loss = descriptor_loss
             self.desc_loss_type = "dense"
         elif self.config["model"]["sparse_loss"]["enable"]:
             print("use sparse_loss!")
             self.desc_params = self.config["model"]["sparse_loss"]["params"]
-            from pytorch_superpoint.utils.loss_functions.sparse_loss import batch_descriptor_loss_sparse
+            from utils.loss_functions.sparse_loss import batch_descriptor_loss_sparse
 
             self.descriptor_loss = batch_descriptor_loss_sparse
             self.desc_loss_type = "sparse"
@@ -241,7 +241,7 @@ class Train_model_heatmap(Train_model_frontend):
                 pass
 
         # detector loss
-        from pytorch_superpoint.utils.utils import labels2Dto3D
+        from utils.utils import labels2Dto3D
 
         if self.gaussian:
             labels_2D = sample["labels_2D_gaussian"]
@@ -408,7 +408,7 @@ class Train_model_heatmap(Train_model_frontend):
                 images_dict, labels_warp_2D, heatmap_nms_batch, img_warp, name
             ):
                 # image overlap
-                from pytorch_superpoint.utils.draw import img_overlap
+                from utils.draw import img_overlap
 
                 # result_overlap = img_overlap(img_r, img_g, img_gray)
                 # overlap label, nms, img
@@ -423,7 +423,7 @@ class Train_model_heatmap(Train_model_frontend):
                 nms_overlap = np.stack(nms_overlap, axis=0)
                 images_dict.update({name + "_nms_overlap": nms_overlap})
 
-            from pytorch_superpoint.utils.var_dim import toNumpy
+            from utils.var_dim import toNumpy
             update_overlap(
                 self.images_dict,
                 labels_2D,
@@ -455,7 +455,7 @@ class Train_model_heatmap(Train_model_frontend):
                     "warped_heatmap",
                 )
             # residuals
-            from pytorch_superpoint.utils.losses import do_log
+            from utils.losses import do_log
 
             if self.gaussian:
                 # original: gt
@@ -525,7 +525,7 @@ class Train_model_heatmap(Train_model_frontend):
         return: 
             heatmap_nms_batch: np [batch, H, W]
         """
-        from pytorch_superpoint.utils.var_dim import toNumpy
+        from utils.var_dim import toNumpy
 
         heatmap_np = toNumpy(heatmap)
         ## heatmap_nms
@@ -585,12 +585,12 @@ class Train_model_heatmap(Train_model_frontend):
         return:
             dict {'loss': mean of difference btw pred and res}
         """
-        from pytorch_superpoint.utils.losses import norm_patches
+        from utils.losses import norm_patches
 
         outs = {}
         # extract patches
-        from pytorch_superpoint.utils.losses import extract_patches
-        from pytorch_superpoint.utils.losses import soft_argmax_2d
+        from utils.losses import extract_patches
+        from utils.losses import soft_argmax_2d
 
         label_idx = labels_2D[...].nonzero().long()
 
@@ -602,7 +602,7 @@ class Train_model_heatmap(Train_model_frontend):
         patches = norm_patches(patches)
 
         # predict offsets
-        from pytorch_superpoint.utils.losses import do_log
+        from utils.losses import do_log
 
         patches_log = do_log(patches)
         # soft_argmax
@@ -647,7 +647,7 @@ class Train_model_heatmap(Train_model_frontend):
         outpus:
             heatmap: tensor[batch, 1, H, W]
         """
-        from pytorch_superpoint.utils.d2s import DepthToSpace
+        from utils.d2s import DepthToSpace
 
         depth2space = DepthToSpace(cell_size)
         heatmap = depth2space(semi)
@@ -659,7 +659,7 @@ class Train_model_heatmap(Train_model_frontend):
         input:
             heatmap: np [(1), H, W]
         """
-        from pytorch_superpoint.utils.utils import getPtsFromHeatmap
+        from utils.utils import getPtsFromHeatmap
 
         # nms_dist = self.config['model']['nms']
         # conf_thresh = self.config['model']['detection_threshold']
@@ -684,7 +684,7 @@ if __name__ == "__main__":
     with open(filename, "r") as f:
         config = yaml.load(f)
 
-    from pytorch_superpoint.utils.loader import dataLoader as dataLoader
+    from utils.loader import dataLoader as dataLoader
 
     # data = dataLoader(config, dataset='hpatches')
     task = config["data"]["dataset"]

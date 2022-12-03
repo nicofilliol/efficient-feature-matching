@@ -17,12 +17,12 @@ import torch.utils.data
 from tensorboardX import SummaryWriter
 
 # from utils.utils import tensor2array, save_checkpoint, load_checkpoint, save_path_formatter
-from pytorch_superpoint.utils.utils import getWriterPath
-from pytorch_superpoint.settings import EXPER_PATH
+from utils.utils import getWriterPath
+from settings import EXPER_PATH
 
 ## loaders: data, model, pretrained model
-from pytorch_superpoint.utils.loader import dataLoader, modelLoader, pretrainedLoader
-from pytorch_superpoint.utils.logging import *
+from utils.loader import dataLoader, modelLoader, pretrainedLoader
+from utils.logging import *
 # from models.model_wrap import SuperPointFrontend_torch, PointTracker
 
 ###### util functions ######
@@ -31,7 +31,7 @@ def datasize(train_loader, config, tag='train'):
     (tag, len(train_loader)*config['model']['batch_size'], len(train_loader)))
     pass
 
-from pytorch_superpoint.utils.loader import get_save_path
+from utils.loader import get_save_path
 
 ###### util functions end ######
 
@@ -44,7 +44,7 @@ def train_base(config, output_dir, args):
 # def train_joint_dsac():
 #     pass
 
-def train_joint(config, output_dir, args, model=None):
+def train_joint(config, output_dir, args):
     assert 'train_iter' in config
 
     # config
@@ -72,7 +72,7 @@ def train_joint(config, output_dir, args, model=None):
     datasize(val_loader, config, tag='val')
     # init the training agent using config file
     # from train_model_frontend import Train_model_frontend
-    from pytorch_superpoint.utils.loader import get_module
+    from utils.loader import get_module
     train_model_frontend = get_module('', config['front_end_model'])
 
     train_agent = train_model_frontend(config, save_path=save_path, device=device)
@@ -85,7 +85,7 @@ def train_joint(config, output_dir, args, model=None):
     train_agent.val_loader = val_loader
 
     # load model initiates the model and load the pretrained model (if any)
-    train_agent.loadModel(network=model)
+    train_agent.loadModel()
     train_agent.dataParallel()
 
     try:
@@ -95,8 +95,6 @@ def train_joint(config, output_dir, args, model=None):
         print ("press ctrl + c, save model!")
         train_agent.saveModel()
         pass
-
-
 
 if __name__ == '__main__':
     # global var
@@ -127,7 +125,6 @@ if __name__ == '__main__':
     p_train.set_defaults(func=train_joint)
 
     args = parser.parse_args()
-    print(args)
 
     if args.debug:
         logging.basicConfig(format='[%(asctime)s %(levelname)s] %(message)s',

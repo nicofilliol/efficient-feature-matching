@@ -5,11 +5,11 @@ from pathlib import Path
 import torch.utils.data as data
 
 # from .base_dataset import BaseDataset
-from pytorch_superpoint.settings import DATA_PATH, EXPER_PATH
-from pytorch_superpoint.utils.tools import dict_update
+from settings import DATA_PATH, EXPER_PATH
+from utils.tools import dict_update
 import cv2
-from pytorch_superpoint.utils.utils import homography_scaling_torch as homography_scaling
-from pytorch_superpoint.utils.utils import filter_points
+from utils.utils import homography_scaling_torch as homography_scaling
+from utils.utils import filter_points
 
 class Coco(data.Dataset):
     default_config = {
@@ -54,7 +54,7 @@ class Coco(data.Dataset):
         self.action = 'train' if task == 'train' else 'val'
 
         # get files
-        base_path = Path(DATA_PATH, task + '2017/')
+        base_path = Path(DATA_PATH, 'COCO/' + task + '2014/')
         # base_path = Path(DATA_PATH, 'COCO_small/' + task + '2014/')
         image_paths = list(base_path.iterdir())
         # if config['truncate']:
@@ -97,11 +97,11 @@ class Coco(data.Dataset):
 
     def init_var(self):
         torch.set_default_tensor_type(torch.FloatTensor)
-        from pytorch_superpoint.utils.homographies import sample_homography_np as sample_homography
-        from pytorch_superpoint.utils.utils import inv_warp_image
-        from pytorch_superpoint.utils.utils import compute_valid_mask
-        from pytorch_superpoint.utils.photometric import ImgAugTransform, customizedTransform
-        from pytorch_superpoint.utils.utils import inv_warp_image, inv_warp_image_batch, warp_points
+        from utils.homographies import sample_homography_np as sample_homography
+        from utils.utils import inv_warp_image
+        from utils.utils import compute_valid_mask
+        from utils.photometric import ImgAugTransform, customizedTransform
+        from utils.utils import inv_warp_image, inv_warp_image_batch, warp_points
         
         self.sample_homography = sample_homography
         self.inv_warp_image = inv_warp_image
@@ -362,7 +362,7 @@ class Coco(data.Dataset):
                 if self.gaussian_label:
                     # print("do gaussian labels!")
                     # warped_labels_gaussian = get_labels_gaussian(warped_set['warped_pnts'].numpy())
-                    from pytorch_superpoint.utils.var_dim import squeezeToNumpy
+                    from utils.var_dim import squeezeToNumpy
                     # warped_labels_bi = self.inv_warp_image(labels_2D.squeeze(), inv_homography, mode='nearest').unsqueeze(0) # bilinear, nearest
                     warped_labels_bi = warped_set['labels_bi']
                     warped_labels_gaussian = self.gaussian_blur(squeezeToNumpy(warped_labels_bi))

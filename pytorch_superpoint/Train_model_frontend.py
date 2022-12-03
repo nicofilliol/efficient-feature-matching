@@ -14,16 +14,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data
 from tqdm import tqdm
-from pytorch_superpoint.utils.loader import dataLoader, modelLoader, pretrainedLoader
+from utils.loader import dataLoader, modelLoader, pretrainedLoader
 import logging
 
-from pytorch_superpoint.utils.tools import dict_update
+from utils.tools import dict_update
 
-from pytorch_superpoint.utils.utils import labels2Dto3D, flattenDetection, labels2Dto3D_flattened
+from utils.utils import labels2Dto3D, flattenDetection, labels2Dto3D_flattened
 
-from pytorch_superpoint.utils.utils import pltImshow, saveImg
-from pytorch_superpoint.utils.utils import precisionRecall_torch
-from pytorch_superpoint.utils.utils import save_checkpoint
+from utils.utils import pltImshow, saveImg
+from utils.utils import precisionRecall_torch
+from utils.utils import save_checkpoint
 
 from pathlib import Path
 
@@ -101,7 +101,7 @@ class Train_model_frontend(object):
         if self.config["model"]["dense_loss"]["enable"]:
             ## original superpoint paper uses dense loss
             print("use dense_loss!")
-            from pytorch_superpoint.utils.utils import descriptor_loss
+            from utils.utils import descriptor_loss
 
             self.desc_params = self.config["model"]["dense_loss"]["params"]
             self.descriptor_loss = descriptor_loss
@@ -110,7 +110,7 @@ class Train_model_frontend(object):
             ## our sparse loss has similar performace, more efficient
             print("use sparse_loss!")
             self.desc_params = self.config["model"]["sparse_loss"]["params"]
-            from pytorch_superpoint.utils.loss_functions.sparse_loss import batch_descriptor_loss_sparse
+            from utils.loss_functions.sparse_loss import batch_descriptor_loss_sparse
 
             self.descriptor_loss = batch_descriptor_loss_sparse
             self.desc_loss_type = "sparse"
@@ -178,38 +178,32 @@ class Train_model_frontend(object):
         optimizer = optim.Adam(net.parameters(), lr=lr, betas=(0.9, 0.999))
         return optimizer
 
-    def loadModel(self, network=None):
+    def loadModel(self):
         """
         load model from name and params
         init or load optimizer
         :return:
         """
-        if network is None:
-            model = self.config["model"]["name"]
-            params = self.config["model"]["params"]
-            print("model: ", model)
-            net = modelLoader(model=model, **params).to(self.device)
-        else:
-            net = network
-        
+        model = self.config["model"]["name"]
+        params = self.config["model"]["params"]
+        print("model: ", model)
+        net = modelLoader(model=model, **params).to(self.device)
         logging.info("=> setting adam solver")
         optimizer = self.adamOptim(net, lr=self.config["model"]["learning_rate"])
 
         n_iter = 0
-        
-        if network is None:
-            ## new model or load pretrained
-            if self.config["retrain"] == True:
-                logging.info("New model")
-                pass
-            else:
-                path = self.config["pretrained"]
-                mode = "" if path[-4:] == ".pth" else "full" # the suffix is '.pth' or 'tar.gz'
-                logging.info("load pretrained model from: %s", path)
-                net, optimizer, n_iter = pretrainedLoader(
-                    net, optimizer, n_iter, path, mode=mode, full_path=True
-                )
-                logging.info("successfully load pretrained model from: %s", path)
+        ## new model or load pretrained
+        if self.config["retrain"] == True:
+            logging.info("New model")
+            pass
+        else:
+            path = self.config["pretrained"]
+            mode = "" if path[-4:] == ".pth" else "full" # the suffix is '.pth' or 'tar.gz'
+            logging.info("load pretrained model from: %s", path)
+            net, optimizer, n_iter = pretrainedLoader(
+                net, optimizer, n_iter, path, mode=mode, full_path=True
+            )
+            logging.info("successfully load pretrained model from: %s", path)
 
         def setIter(n_iter):
             if self.config["reset_iter"]:
@@ -406,16 +400,16 @@ class Train_model_frontend(object):
         if train:
             # print("img: ", img.shape, ", img_warp: ", img_warp.shape)
             outs, outs_warp = (
-                self.net({"image" : img.to(self.device)}),
-                self.net({"image" : img_warp.to(self.device)}),
+                self.net(img.to(self.device)),
+                self.net(img_warp.to(self.device), subpixel=self.subpixel),
             )
             semi, coarse_desc = outs[0], outs[1]
             semi_warp, coarse_desc_warp = outs_warp[0], outs_warp[1]
         else:
             with torch.no_grad():
                 outs, outs_warp = (
-                    self.net({"image" : img.to(self.device)}),
-                    self.net({"image" : img_warp.to(self.device)}),
+                    self.net(img.to(self.device)),
+                    self.net(img_warp.to(self.device), subpixel=self.subpixel),
                 )
                 semi, coarse_desc = outs[0], outs[1]
                 semi_warp, coarse_desc_warp = outs_warp[0], outs_warp[1]
@@ -495,7 +489,7 @@ class Train_model_frontend(object):
 
             # extract the patches from labels
             label_idx = labels_2D[...].nonzero()
-            from pytorch_superpoint.utils.losses import extract_patches
+            from utils.losses import extract_patches
 
             patch_size = 32
             patches = extract_patches(
@@ -762,8 +756,8 @@ class Train_model_frontend(object):
         :param batch_size:
         :return:
         """
-        from pytorch_superpoint.utils.utils import getPtsFromHeatmap
-        from pytorch_superpoint.utils.utils import box_nms
+        from utils.utils import getPtsFromHeatmap
+        from utils.utils import box_nms
 
         boxNms = False
         n_iter = self.n_iter
@@ -911,7 +905,7 @@ if __name__ == "__main__":
     with open(filename, "r") as f:
         config = yaml.load(f)
 
-    from pytorch_superpoint.utils.loader import dataLoader as dataLoader
+    from utils.loader import dataLoader as dataLoader
 
     # data = dataLoader(config, dataset='hpatches')
     task = config["data"]["dataset"]

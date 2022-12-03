@@ -1,4 +1,0 @@
-load model: logs/magicpoint_synth20/checkpoints/superPointNet_200000_checkpoint.pth.tar
-homography adaptation: 100
-Homography adaptation: 100
-output pairs: 82783
