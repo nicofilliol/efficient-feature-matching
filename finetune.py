@@ -21,9 +21,6 @@ from SuperGlue.utils.preprocess_utils import torch_find_matches
 from SuperGlue.utils.dataset import COCO_loader, COCO_valloader, collate_batch
 from torch.utils.tensorboard import SummaryWriter
 from pruning.fine_grained_pruning import FineGrainedPruner
-from pytorch_superpoint.train4 import train_joint
-from pytorch_superpoint.settings import EXPER_PATH
-import argparse
 
 def change_lr(epoch, config, optimizer):
     if epoch >= config['optimizer_params']['step_epoch']:

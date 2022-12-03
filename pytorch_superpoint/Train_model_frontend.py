@@ -404,16 +404,16 @@ class Train_model_frontend(object):
         if train:
             # print("img: ", img.shape, ", img_warp: ", img_warp.shape)
             outs, outs_warp = (
-                self.net(img.to(self.device)),
-                self.net(img_warp.to(self.device), subpixel=self.subpixel),
+                self.net({"image" : img.to(self.device)}),
+                self.net({"image" : img_warp.to(self.device)}),
             )
             semi, coarse_desc = outs[0], outs[1]
             semi_warp, coarse_desc_warp = outs_warp[0], outs_warp[1]
         else:
             with torch.no_grad():
                 outs, outs_warp = (
-                    self.net(img.to(self.device)),
-                    self.net(img_warp.to(self.device), subpixel=self.subpixel),
+                    self.net({"image" : img.to(self.device)}),
+                    self.net({"image" : img_warp.to(self.device)}),
                 )
                 semi, coarse_desc = outs[0], outs[1]
                 semi_warp, coarse_desc_warp = outs_warp[0], outs_warp[1]
