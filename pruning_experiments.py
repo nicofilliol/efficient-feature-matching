@@ -10,6 +10,7 @@ from SuperGlue.models.matching import Matching
 import matplotlib.pyplot as plt
 import math
 import helper
+import time
 import random
 
 def check_sparsity(model: torch.nn.Module, param_name, sparsity):
@@ -54,7 +55,7 @@ def sensitivity_scan(model, named_params, scan_step=0.1, scan_start=0.4, scan_en
     return (names, sparsities, precisions, recalls)
 
 def plot_sensitivity_scan(names, sparsities, results, dense_model_result, metric="precision"):
-    lower_bound = 100 - (100 - dense_model_result) * 1.5
+    lower_bound = dense_model_result
     fig, axes = plt.subplots(3, int(math.ceil(len(results) / 3)),figsize=(15,8))
     axes = axes.ravel()
     plot_index = 0
@@ -63,20 +64,21 @@ def plot_sensitivity_scan(names, sparsities, results, dense_model_result, metric
         curve = ax.plot(sparsities, results[plot_index])
         line = ax.plot(sparsities, [lower_bound] * len(sparsities))
         ax.set_xticks(np.arange(start=0.4, stop=1.0, step=0.1))
-        ax.set_ylim(lower_bound-10, 95)
+        ax.set_ylim(lower_bound-30, 95)
         ax.set_title(name)
         ax.set_xlabel('sparsity')
         ax.set_ylabel(metric)
         ax.legend([
             f'{metric} after pruning',
-            f'{lower_bound / dense_model_result * 100:.0f}% of dense model {metric}'
+            f'dense model {metric}'
         ])
         ax.grid(axis='x')
         plot_index += 1
     fig.suptitle(f'Sensitivity Curves: Validation {metric} vs. Pruning Sparsity')
     fig.tight_layout()
     fig.subplots_adjust(top=0.925)
-    plt.savefig(f"images/{metric}_sensitivity.png")
+    current_time = time.strftime("%Y%m%d-%H%M%S")
+    plt.savefig(f"images/{current_time}_{metric}_sensitivity.png")
 
 def main():
     # Evaluate dense model
@@ -103,25 +105,33 @@ def main():
     device = 'cpu'
     matching = Matching(config).eval().to(device)
 
+    dense_results = evaluate(matching)
+    print(f"Dense Results = {dense_results}")
+
     # # Randomly sample a subset of parameter sets for tests
     param_sets = [(name, param) for (name, param) in matching.named_parameters() if param.dim() > 1 if "superglue" in name]
-    sample_param_sets = random.sample(param_sets, 12)
+    sample_param_sets = random.sample(param_sets, 9)
 
     # # Profile and evaluate dense model
     # helper.profile_matching_model(matching, count_nonzero_only=False)
     # helper.plot_weight_distribution(sample_param_sets, out_path="weight_distribution_dense.png", count_nonzero_only=False)
-
-    # dense_results = evaluate(matching)
-    # print(f"Dense Results = {dense_results}")
     
     # # Print Model Structure and plot distribution of weights
     # helper.print_model_structure(matching.superglue)
 
     # # Fine-grained Pruning (magnitude based)
     # # Sensitivity Scan
-    # names, sparsities, precisions, recalls = sensitivity_scan(matching, sample_param_sets, scan_step=0.2, scan_start=0.5, scan_end=1.0)
-    # plot_sensitivity_scan(names, sparsities, precisions, dense_results["precision"], metric="precision")
-    # plot_sensitivity_scan(names, sparsities, recalls, dense_results["recall"], metric="recall")
+    names, sparsities, precisions, recalls = sensitivity_scan(matching, sample_param_sets, scan_step=0.2, scan_start=0.3, scan_end=1.0)
+    plot_sensitivity_scan(names, sparsities, precisions, dense_results["precision"], metric="precision")
+    plot_sensitivity_scan(names, sparsities, recalls, dense_results["recall"], metric="recall")
+
+    # Same for SuperPoint
+    param_sets = [(name, param) for (name, param) in matching.named_parameters() if param.dim() > 1 if "superpoint" in name]
+    sample_param_sets = random.sample(param_sets, 9)
+
+    names, sparsities, precisions, recalls = sensitivity_scan(matching, sample_param_sets, scan_step=0.2, scan_start=0.3, scan_end=1.0)
+    plot_sensitivity_scan(names, sparsities, precisions, dense_results["precision"], metric="precision")
+    plot_sensitivity_scan(names, sparsities, recalls, dense_results["recall"], metric="recall")
 
     # Prune
     sparsity_for_layer_type = {

@@ -1,4 +1,4 @@
-from SuperGlue.matching.models.superpoint import SuperPoint
+from SuperGlue.models.superpoint import SuperPoint
 from train4 import train_joint
 import torch
 import argparse

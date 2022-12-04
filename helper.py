@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 import time
 import warnings
 import math
-
+from pathlib import Path
+from SuperGlue.utils.common import read_image_with_homography, download_base_files, download_test_images
+import numpy as np
+import timeit
 
 # Data Size Definitions
 Byte = 8
@@ -91,20 +94,36 @@ def plot_weight_distribution(layers, out_path, bins=256, count_nonzero_only=Fals
     fig.subplots_adjust(top=0.925)
     plt.savefig(out_path)
 
+def get_sample_data(idx=0):
+    with open("SuperGlue/assets/coco_test_images_homo.txt", 'r') as f:
+        homo_pairs = f.readlines()
+    
+    homo_pair = homo_pairs[idx]
+    download_base_files()
+    download_test_images()
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    split_info = homo_pair.strip().split(' ')
+    image_name = split_info[0]
+    homo_info = list(map(lambda x: float(x), split_info[1:]))
+    homo_matrix = np.array(homo_info).reshape((3,3)).astype(np.float32)
+
+    input_dir = Path("SuperGlue/assets/coco_test_images/")
+    image0, image1, inp0, inp1, scales0, homo_matrix = read_image_with_homography(input_dir / image_name, homo_matrix, device,
+                                                [640, 480], 0, False)
+    return inp0, inp1
+
 
 class MatchingProfile():
     def __init__(self, matching, keys=['keypoints', 'scores', 'descriptors'], n_warmup=20, n_test=100, count_nonzero_only=False):
         self.matching = matching
         self.keys = keys
-        self.n_warmup = 20
-        self.n_test = 100
+        self.n_warmup = n_warmup
+        self.n_test = n_test
         self.count_nonzero_only = count_nonzero_only
 
     @torch.no_grad()
     def profile_superpoint(self):
-        # Create dummy input
-        dummy_input = {'image': torch.randn(1, 1, 480, 640)}
-
+        dummy_input = {"image" : get_sample_data()[0]}
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             macs = torchprofile.profile_macs(self.matching.superpoint, dummy_input)
@@ -112,31 +131,57 @@ class MatchingProfile():
         model_size = get_model_size(self.matching.superpoint, count_nonzero_only=self.count_nonzero_only)
 
         # Warmup
-        for _ in range(self.n_warmup):
-            _ = self.matching.superpoint(dummy_input)
-        # Real test
-        t1 = time.time()
-        for _ in range(self.n_test):
-            _ = self.matching.superpoint(dummy_input)
-        t2 = time.time()
-        avg_latency = (t2 - t1) / self.n_test
+        for i in range(self.n_warmup):
+            # Get dummy input
+            input = {"image" : get_sample_data(idx=i)[0]}
+            out = self.matching.superpoint(input)
 
-        return (avg_latency, macs, params, model_size)
+        n_keypoints = len(out["keypoints"][0])
+        # Real test
+        n_images = 100
+        input = [{"image" : get_sample_data(idx=i)[0]} for i in range(n_images)]
+
+        latency_dict = {}
+        overall_avg = 0
+        n_images = 100
+
+        for n in range(n_images):
+            t1 = time.time()
+            for i in range(self.n_test):
+                out = self.matching.superpoint(input[n])
+            t2 = time.time()
+            avg_latency =(t2-t1) / self.n_test
+            overall_avg += avg_latency/n_images
+            n_keypoints = len(out["keypoints"][0])
+            if n_keypoints in latency_dict:
+                latency_dict[n_keypoints] = np.mean([latency_dict[n_keypoints], avg_latency])
+            else:
+                latency_dict[n_keypoints] = avg_latency
+
+        return (overall_avg, macs, params, model_size, n_keypoints, latency_dict)
 
     @torch.no_grad()
     def profile_superglue(self):
         # Create dummy input
-        data = {'image0': torch.randn(1, 1, 480, 640), 'image1': torch.randn(1, 1, 480, 640)}
+        inp0, inp1 = get_sample_data(idx=0)
+        data = {'image0': inp0, 'image1': inp1}
 
         pred0 = self.matching.superpoint({'image': data['image0']})
         data = {**data, **{k+'0': v for k, v in pred0.items()}}
         pred1 = self.matching.superpoint({'image': data['image1']})
         data = {**data, **{k+'1': v for k, v in pred1.items()}}
+
+        n_keypoints0 = len(pred0["keypoints"][0])
+        n_keypoints1 = len(pred1["keypoints"][0])
         
-        # Batch all data
-        for k in data:
-            if isinstance(data[k], (list, tuple)):
-                data[k] = torch.stack(data[k])
+        def batch_data(data):
+            # Batch all data
+            for k in data:
+                if isinstance(data[k], (list, tuple)):
+                    data[k] = torch.stack(data[k])
+            return data
+
+        data = batch_data(data)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             macs = torchprofile.profile_macs(self.matching.superglue, data)
@@ -146,15 +191,40 @@ class MatchingProfile():
         # Perform the matching
         # Warmup
         for _ in range(self.n_warmup):
-            _ = {**data, **self.matching.superglue(data)}
+            out = {**data, **self.matching.superglue(data)}
+        
+        kpts0, kpts1 = out['keypoints0'], out['keypoints1']
+        matches, conf = out['matches0'], out['matching_scores0']
+        valid = matches > -1
+        mkpts0 = kpts0[valid]
+        n_matches = len(mkpts0)
+        
         # Real test
-        t1 = time.time()
-        for _ in range(self.n_test):
-            _ = {**data, **self.matching.superglue(data)}
-        t2 = time.time()
-        avg_latency = (t2 - t1) / self.n_test
+        latency_dict = {}
+        overall_avg = 0
+        n_images = 100
+        for n in range(n_images):
+            inp0, inp1 = get_sample_data(idx=n)
+            data = {'image0': inp0, 'image1': inp1}
+            pred0 = self.matching.superpoint({'image': data['image0']})
+            data = {**data, **{k+'0': v for k, v in pred0.items()}}
+            pred1 = self.matching.superpoint({'image': data['image1']})
+            data = {**data, **{k+'1': v for k, v in pred1.items()}}
+            data = batch_data(data)
 
-        return (avg_latency, macs, params, model_size)
+            t1 = time.time()
+            for _ in range(self.n_test):
+                _ = {**data, **self.matching.superglue(data)}
+            t2 = time.time()
+            avg_latency = (t2 - t1) / self.n_test
+            overall_avg += avg_latency/n_images
+            n_keypoints = len(pred0["keypoints"][0])
+            if n_keypoints in latency_dict:
+                latency_dict[n_keypoints] = np.mean([latency_dict[n_keypoints], avg_latency])
+            else:
+                latency_dict[n_keypoints] = avg_latency
+
+        return (overall_avg, macs, params, model_size, n_keypoints0, n_keypoints1, n_matches, latency_dict)
 
     def to_cpu(self):
         self.matching = self.matching.to('cpu')
@@ -164,15 +234,15 @@ class MatchingProfile():
 
 
 def profile_matching_model(model, count_nonzero_only=False):
-    matching_latency = MatchingProfile(model, count_nonzero_only=count_nonzero_only)
+    matching_latency = MatchingProfile(model, n_warmup=5, n_test=10, count_nonzero_only=count_nonzero_only)
 
     # CPU Latency Measurement
     table_template = "{:<15} {:<15} {:<15}"
     print (table_template.format('', 'SuperPoint', 'SuperGlue'))
     matching_latency.to_cpu()
 
-    sp_latency, sp_macs, sp_params, sp_size = matching_latency.profile_superpoint()
-    sg_latency, sg_macs, sg_params, sg_size = matching_latency.profile_superglue()
+    sp_latency, sp_macs, sp_params, sp_size, n_keypoints, sp_latencies = matching_latency.profile_superpoint()
+    sg_latency, sg_macs, sg_params, sg_size, n_keypoints0, n_keypoints1, n_matches, sg_latencies = matching_latency.profile_superglue()
     print(table_template.format('Latency (ms)', 
                                 round(sp_latency * 1000, 1),
                                 round(sg_latency * 1000, 1)))
@@ -185,6 +255,12 @@ def profile_matching_model(model, count_nonzero_only=False):
     print(table_template.format('Size (MiB)', 
                                 round(sp_size / MiB, 2),
                                 round(sg_size / MiB, 2)))
+
+    print(f"SuperPoint: {n_keypoints} keypoints.")
+    print(f"SuperGlue: {n_keypoints0} keypoints in image A, {n_keypoints1} in image B, {n_matches} matches.")
+
+    print(sp_latencies)
+    print(sg_latencies)
 
     # Put model back to CUDA
     #matching_latency.to_gpu()

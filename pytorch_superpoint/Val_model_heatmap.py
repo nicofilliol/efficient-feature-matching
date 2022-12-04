@@ -96,7 +96,7 @@ class Val_model_heatmap(SuperPointFrontend_torch):
         train_agent = Train_model_heatmap
 
         with torch.no_grad():
-            outs = self.net(images)
+            outs = self.net({"image" : images})
         semi = outs['semi']
         self.outs = outs
 
