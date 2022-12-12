@@ -57,6 +57,20 @@ from utils.common import (AverageTimer, VideoStreamer,
 torch.set_grad_enabled(False)
 
 
+def make_video(image_folder):
+    import imageio.v2 as imageio
+    import re
+
+    images = []
+    filenames = [img for img in os.listdir(image_folder) if img.endswith(".png")]
+    filenames.sort(key=lambda x: int(re.split('_|\.', x)[2]))
+    print(filenames)
+
+    for filename in filenames:
+        images.append(imageio.imread(os.path.join(image_folder, filename)))
+    imageio.mimsave(os.path.join(image_folder, "sequence.gif"), images)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='SuperGlue demo',
@@ -153,6 +167,12 @@ if __name__ == '__main__':
     }
     matching = Matching(config).eval().to(device)
     keys = ['keypoints', 'scores', 'descriptors']
+
+    # # Overwrite state dict
+    # from pruning.channel_pruning import ChannelPruner
+    # pruner = ChannelPruner(matching.superpoint, prune_ratio=0.2)
+    # matching.superpoint.load_state_dict(torch.load("/Users/nfilliol/Desktop/ETH/MIT_HS22/TinyML/Project/Experiments/Experiment3/superpoint_finetuned3.pt"))
+    # matching.superglue.load_state_dict(torch.load("/Users/nfilliol/Desktop/ETH/MIT_HS22/TinyML/Project/Experiments/Experiment3/superglue_finetuned3.pt"))
 
     vs = VideoStreamer(opt.input, opt.resize, opt.skip,
                        opt.image_glob, opt.max_length)
@@ -264,3 +284,7 @@ if __name__ == '__main__':
 
     cv2.destroyAllWindows()
     vs.cleanup()
+
+    make_video(opt.output_dir)
+
+
